@@ -3,7 +3,7 @@ layout: post
 title: "fMRI Neuroimaging Diffusion Models"
 date: 2023-12-19 10:00:00 +0000
 categories: AI 
-tags: [Research, Stanford, Inria, Neuroimaging]
+tags: [Research, Stanford, Inria, Neuroimaging, HPC]
 ---
 
 # Foundational Number Sense Training Gains Are Predicted by Hippocampal-Parietal Circuits
@@ -35,7 +35,6 @@ Need for comprehensive assessment: Diagnosing dyscalculia typically requires a c
 Firstly , Let's download the the neccessary packages and setup the python environment.
 
 
-
 ```python
 pip install -U --user nipype, configparser, argparse, 
 niflow.nipype1.workflows.dmri.fsl.dti
@@ -43,12 +42,12 @@ niflow.nipype1.workflows.dmri.fsl.dti
 import diffusion_pipelines #custom closed source package 
 ```
 
-Nipype, an open-source, community-developed initiative under the umbrella of NiPy, is a Python project that provides a uniform interface to existing neuroimaging software and facilitates interaction between these packages within a single workflow.
+[Nipype](https://nipype.readthedocs.io/en/latest/users/install.html), an open-source, community-developed initiative under the umbrella of NiPy, is a Python project that provides a uniform interface to existing neuroimaging software and facilitates interaction between these packages within a single workflow.
 
 
 The diffusion pipelines package is a pre processing script that applies multiple registrations on the fMRI images, e.g. Correcting Eddy Currents.
 
-The mrtrix3 library (third_party) offers a suitable alternative pipeline that produces the tractography.
+The [mrtrix3](https://www.mrtrix.org/) library (third_party) offers a suitable alternative pipeline that produces the tractography.
 
 ```python
 pip install -U --user nipype, configparser, argparse, 
@@ -79,8 +78,6 @@ The visualization of the expected output is a tractography as shown below:
 ![Alt Text](https://www.researchgate.net/publication/342053802/figure/fig8/AS:902008584290315@1592067013794/Functional-MRI-fMRI-and-diffusion-tensor-imaging-DTI-tractography-for-presurgical.png)
 
 
-The [Github Repo](https://github.com/ZiadMotagaly/number_sense) here contains the nipype package , along with a diffusion model that is used to synthesize T2 fMRI images.
-
 ## Niflow Diffusion Package
 
 This is a probabilistic tractography package primarily based on BEDPOSTX and ProbTrackX2. 
@@ -99,3 +96,5 @@ The main script is m_niflow_multiproc. It contains all the required libraries th
 m_niflow_multiproc_lite is derived from the main script , and it contains the minimum amount of modules and nodes that are required ot run the pipeline. 
 
 The test file , contains unit tests used to valideate the package. Not that nipype nodes cannot be unit tested .
+
+The [Github Repo](https://github.com/ZiadMotagaly/number_sense) here contains the niflow package. Due to the legal complications of acquiring T2 fMRI images, I developed and finetuned a diffusion model (ML) that is used to synthesize said images to simulate more runs on the Niflow package. 

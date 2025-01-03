@@ -1,0 +1,201 @@
+---
+layout: post
+title: "BERT Multi-label Classification for INCOSE standards "
+date: 2024-06-14 10:00:00 +0000
+categories: AI
+tags: [Research, Aerospace , NLP , Synthetic Data, Transformers]
+---
+
+# Development of a Natural Language Processing Pipeline for INCOSE based Engineering Requirements
+
+## Abstract
+The objective of this project is to develop a software package that is able to automate and optimize the manual tasks of writing and evaluating INCOSE standard writing requirements used in designing eVTOLS. In that regard, there are a few obstacles that were faced, including lack of data , and a scarcity of computing resources, that we worked to overcome.  In this report , we will go through the development process and its respective outcome.
+
+## Introduction
+This project aims to develop an NLP pipeline that validates syntax related rules, mainly using a SpaCy module.  Moreover, regarding semantic analysis, a BERT-based multi-label classification model to parse structured requirement statements into six distinct components: Condition, Subject, Priority, Verb, Object, and Qualification. Each sentence is tokenized and fed into a BERT model, leveraging its contextualized embeddings to classify the [CLS] token for each component. (ModernBERT was released later on in 2024 by HuggingFace) The project processes the data by encoding labels using LabelEncoder and organizes them for classification. A custom PyTorch model is built with separate classifiers for each component, ensuring it can predict the correct label even if a component is missing (marked as "NA"). Hence to summarize :
+Develop an NLP based approach to apply the 40 +INCOSE  writing requirements to analyze the syntax of a given corpus.
+Complimentary, develop a multi-label classification model to parse structured requirement statements
+
+## Pertinence Study
+The key for the development process is selecting the correct algorithm to tackle our multi label classification objective. With that being said, a relevance study was conducted regarding the most suitable candidates :
+* Classical Machine Learning (BoW, TF-IDF) is simple and effective for small datasets but may lose the nuance of word order and context.​
+* Word Embeddings + Machine Learning provide better semantic understanding but still rely on simpler classifiers.​
+* Transformers (BERT, GPT) are the current state-of-the-art for NLP tasks, achieving high accuracy by leveraging attention mechanisms and pre-training on large datasets​
+
+
+TF-IDF
+
+Term Frequency (TF): How often a word appears in a document. ​
+Inverse Document Frequency (IDF): How rare the word is across all documents.​
+* Captures importance: Words that are frequent in a particular sentence but not across the entire dataset get a higher score, making the representation more informative.​
+* Highlight important words that are more characteristic of a specific part of the sentence and help in classification.
+The main disadvantage for this algorithm is the lack of semantic analysis.
+
+Word2Vec + TF - IDF
+
+Concatenation: Simply combine TF-IDF and word embedding vectors into one feature vector.​
+* Weighted Averaging: Use TF-IDF scores as weights to compute the weighted average of word embeddings. (word2vec)​
+* Embedding as Features in TF-IDF Space: Use word embeddings as features weighted by TF-IDF scores.
+
+Word2Vec + Continuous Bag of Words
+* Suppose we want each word in the corpus to be predicted by every other word in a small span of 4 words. We write the neighbor set  N={−4,−3,−2,−1,+1,+2,+3,+4}​
+
+Word2Vec + SkipGram
+
+* That is, we want to maximize the total probability for the corpus, as seen by a probability model that uses words to predict its word neighbors. In a way it is the inverse of CBOW
+
+Large Language Models
+
+* Large Language Models, based on the transformer architecture have the basic advantages of Embeddings like Word2Vec and the advanced capabilities of attention architecture. The following is a resume of the different approaches that can be taken :
+
+Pre-trained Language Models as Classifiers (Labeled Dataset)​
+
+* Each sentence in the document will be assigned a label based on the part/category to be classified.Use models like BERT, GPT, or DistilBERT depending on the complexity and size of the dataset.​
+
+* Fine-tune the pre-trained LLM. ex. Hugging Face’s transformers / trainers library.​
+
+​Zero, one , few -shot Classification with LLMs​
+
+* Over time, as we accumulate labeled data (either manually or semi-automatically via zero-shot predictions)​
+* Manually Labeling examples to achieve one / few shot classification. More precise.​
+
+LLM Feature Extraction + Traditional Classifiers​
+* Use LLM to extract embeddings (representations) from the text.
+* Then use them as features in a ML classifier like Random Forest or SVM.
+
+After looking through these different strategies and algorithms to realise the project, we reached a consensus that the limiting factors for using LLMs to classify the writing requirements would be GPU availability and Data Labelling. This is because there are only a few hundred examples of INCOSE validated sentences available, and moreover, traditional ML is not the best solution for semantic analysis. Searching for alternative methods like prompt engineering could be fruitful, along with delving into different Deep learning solutions.
+
+Few shot prompting with BERT ​
+
+* In this setup, you fine-tune BERT using your few-shot prompts. Essentially, you're training BERT to predict the class given the input and a few examples.​
+* Since BERT is not trained to handle natural language prompts like GPT-3, you would manually convert your examples into these prompts and then fine-tune BERT with them.​
+* This approach still involves fine-tuning BERT, so it's not "pure" few-shot learning. You will need to create a small labeled dataset to train the model, but it can be smaller than what's typically required for traditional BERT fine-tuning.
+
+
+Equally , we can use GPT 3 - API calls . This will be a cost break down of using their services :
+
+API Pricing ​
+
+Davinci (largest, most capable version): Approximately $0.02 per 1,000 tokens.
+
+​Curie (smaller, faster version): Approximately $0.002 per 1,000 tokens.​
+1 token ~= 4 characters, or ~0.75 words in English. For reference, the average sentence has around 20 words (~30 tokens).​
+
+Cost Calculation Example for Classification of Thousands of Sentences
+
+​Assume each sentence has ~30 tokens.​
+Prompt with few-shot examples has ~150 tokens.​
+Total per API call: ~180 tokens.​
+
+
+Cost Per Classification:​
+
+Davinci: 180 tokens ≈ $0.0036 per sentence.​
+Curie: 180 tokens ≈ $0.00036 per sentence.​
+
+For Thousands of Sentences:​
+
+10,000 sentences:​
+Davinci: $0.0036 * 10,000 = $36​
+Curie: $0.00036 * 10,000 = $3.60​
+
+Few-shot Fine-tuning via API:​
+
+OpenAI allows you to fine-tune models on your dataset, charging based on the number of training examples and the model size.​
+
+Fine-tuning costs:​
+Training: Approximately $0.03 per 1,000 tokens for davinci.​
+Usage (inference): After fine-tuning, inference costs remain similar to regular API calls.
+
+Classification without Fine-tuning (Prompting):​
+Use this when you have limited labeled data (few-shot) or want to leverage the model's general knowledge for tasks without investing in the computational cost of fine-tuning. Fine-tuning makes the model specialized for your task, while zero-shot or few-shot classification uses the model's pretrained knowledge to directly make predictions without parameter updates.​
+Our decision was to move forward with BERT. AFter having done an in-depth review of the different algorithms that can be used to process text for classification purposes. Then compare the costs, effectiveness and feasibility of developing different LLMs, including BERT and GPT2 (Prompt Engineering) In conclusion, LLM is the best approach to move forward. However, it will depend on the data collection and GPU constraints.Therefore, after discussions we secured enough local GPU compute, and decided to design prompts to GPT 3 , that simulate synthetic examples for the standards. We identified that data labeling is prone to human error and can be subjective. To address this, we are working with Murad, a specialist in writing requirements, to validate the labeling process
+Please keep in mind that the classification task is specifically designed to solve only one of the rules that requires semantic analysis to classify the following sentence structure :
+
+Condition + Subject + Priority + Verb + Object + Qualification
+
+An important caveat is that the Condition and Qualification terms are optional , hence there are sentnences that have one or the other , none or both .
+
+Looking back at our Introduction, we see that the second outcome is to satisfy all the other rules that can be achieved with an NLP module like SpaCy. Most of these rules are syntax based.
+
+## BERT Multi-Label Classifier
+
+The approach to achieve our objective is to train seperate classifiers and heads for each segment of the sentence.
+
+```python
+
+# Define the Multi-Label BERT Model
+class MultiLabelBERT(BertPreTrainedModel):
+    def __init__(self, config, num_labels_condition, num_labels_subject, num_labels_priority, num_labels_verb, num_labels_object, num_labels_qualification):
+        super(MultiLabelBERT, self).__init__(config)
+        self.bert = BertModel(config)
+        # Separate classification heads for each sentence part
+        self.classifier_condition = nn.Linear(config.hidden_size, num_labels_condition)
+        self.classifier_subject = nn.Linear(config.hidden_size, num_labels_subject)
+        self.classifier_priority = nn.Linear(config.hidden_size, num_labels_priority)
+        self.classifier_verb = nn.Linear(config.hidden_size, num_labels_verb)
+        self.classifier_object = nn.Linear(config.hidden_size, num_labels_object)
+        self.classifier_qualification = nn.Linear(config.hidden_size, num_labels_qualification)
+
+
+        self.init_weights()
+
+
+    def forward(self, input_ids, attention_mask=None, labels_condition=None, labels_subject=None, labels_priority=None, labels_verb=None, labels_object=None, labels_qualification=None,):
+        outputs = self.bert(input_ids, attention_mask=attention_mask)
+        pooled_output = outputs[1]  # Take pooled output from CLS token
+
+
+        # Predict each part
+        condition_logits = self.classifier_condition(pooled_output)
+        subject_logits = self.classifier_subject(pooled_output)
+        priority_logits = self.classifier_priority(pooled_output)
+        verb_logits = self.classifier_verb(pooled_output)
+        object_logits = self.classifier_object(pooled_output)
+        qualification_logits = self.classifier_qualification(pooled_output)
+        loss = None
+        if (
+            labels_condition is not None
+            and labels_subject is not None
+            and labels_priority is not None
+            and labels_verb is not None
+            and labels_object is not None
+            and labels_qualification is not None
+        ):
+            loss_fct = nn.CrossEntropyLoss()
+            loss_condition = loss_fct(condition_logits, labels_condition)
+            loss_subject = loss_fct(subject_logits, labels_subject)
+            loss_priority = loss_fct(priority_logits, labels_priority)
+            loss_verb = loss_fct(verb_logits, labels_verb)
+            loss_object = loss_fct(object_logits, labels_object)
+            loss_qualification = loss_fct(qualification_logits, labels_qualification)
+
+
+            # Sum all the losses for each part
+            loss = (
+                loss_condition
+                + loss_subject
+                + loss_priority
+                + loss_verb
+                + loss_object
+                + loss_qualification
+            )
+        # Return the total loss if calculated, otherwise just the logits
+        return (
+            loss,
+            condition_logits,
+            subject_logits,
+            priority_logits,
+            verb_logits,
+            object_logits,
+            qualification_logits
+        ) if loss is not None else (
+            condition_logits,
+            subject_logits,
+            priority_logits,
+            verb_logits,
+            object_logits,
+            qualification_logits
+        )
+```
+
